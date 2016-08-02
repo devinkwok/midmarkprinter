@@ -1,8 +1,10 @@
 import sys, glob, serial, atexit, logging, time, getopt, winsound
 
-versionNumber = '1.0'
+versionNumber = '1.1'
 mute = False
 
+# function to identify serial ports
+# code from http://stackoverflow.com/questions/12090503/listing-available-com-ports-with-python
 def serial_ports():
     ''' Lists serial port names
 
@@ -110,25 +112,32 @@ def main():
     #decode and write serial data to file as it arrives
     try:
         while True:
-            try:
-                bytes = ser.readline()
-                line = bytes.decode('ascii', errors='strict')
-            except UnicodeError:
-                msg = 'ERROR: unable to decode {}'.format(bytes)
-                writeToFile(msg, fileprefix)
-                printAndLog(logging.ERROR, msg)
-            if line != '':
-                line = line.rstrip('\r\n')
-                #fill in date
-                if line == ' __ / __ / ____  __ : __':
-                    timestring = time.strftime(' %m / %d / %Y  %H : %M')
-                    writeToFile(timestring, fileprefix)
-                    printAndLog(logging.DEBUG, 'Timestamp inserted: {}'.format(timestring))
-                else:
-                    writeToFile(line, fileprefix)
-                    printAndLog(logging.DEBUG, 'Read line: {}'.format(line))
-                if not mute:
-                    winsound.PlaySound('printer-sound.wav', winsound.SND_FILENAME | winsound.SND_ASYNC)
+            bytes = ser.readline()
+            # end of printing
+            if bytes == b'\xff':
+                writeToFile('\/\/\/\/\/\/\/\/\/\/\/\/ END OF PRINTOUT', fileprefix)
+                printAndLog(logging.INFO, 'Detected end of printout')
+            # decode bytes as ASCII
+            else:
+                try:
+                    line = bytes.decode('ascii', errors='strict')
+                    if line != '':
+                        line = line.rstrip('\r\n')
+                        #fill in date
+                        if line == ' __ / __ / ____  __ : __':
+                            timestring = time.strftime(' %m / %d / %Y  %H : %M')
+                            writeToFile(timestring, fileprefix)
+                            printAndLog(logging.DEBUG, 'Timestamp inserted: {}'.format(timestring))
+                        #write line to file
+                        else:
+                            writeToFile(line, fileprefix)
+                            printAndLog(logging.DEBUG, 'Read line: {}'.format(line))
+                        if not mute:
+                            winsound.PlaySound('printer-sound.wav', winsound.SND_FILENAME | winsound.SND_ASYNC)
+                except UnicodeError:
+                    msg = 'ERROR: unable to decode {}'.format(bytes)
+                    writeToFile(msg, fileprefix)
+                    printAndLog(logging.ERROR, msg)
     except serial.SerialException:
         printAndLog(logging.ERROR, 'ERROR: serial connnection lost')
         sys.exit(1)
