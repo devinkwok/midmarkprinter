@@ -1,5 +1,5 @@
-Arduino-based interface for Midmark Sterilizer
-==============================================
+Arduino-based printer emulator for sterilizer
+=============================================
 
 An emulator for the Epson M160 dot matrix printer attachment for the Midmark M11 Sterilizer (autoclave). Developed for ASK Dental Clinic to produce digital backups of sterilization records.
 
